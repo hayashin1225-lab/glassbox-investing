@@ -1,6 +1,8 @@
 # Software Studio Operating Model
 
-Status: Canon
+Status: Provisional Canon / 準正本
+
+> この運用モデルは現時点では構想段階であり、実践による検証を経ていない。外販製品・社内ツールの実運用結果を確認した後、正本への昇格可否を判断する。
 
 ## 基本原則
 
