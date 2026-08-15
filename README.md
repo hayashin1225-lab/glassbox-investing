@@ -6,6 +6,7 @@ Glassbox Investing — 投資研究ソフトと「会計の公共化」。See th
 
 - [Business Principles](canon/business-principles.md) — 透明化を選ぶ事業上の理由と、会社を独立に解釈可能な対象として開く原則
 - [Brand Identity](canon/brand-identity.md) — 正式ブランド名、日本語表記「グラスボックス・インベスティング」、略称「グラスボックス」、表記固定ルール、タグライン等
+- [Original Question Principle](canon/original-question-principle.md) — 「決定木は捨ててもよい。原問いは捨てない。」を中核とする対話・構造化原則。原問いを保持し、分類や決定木を補助線として扱う。
 
 ## Provisional Canon / 準正本
 
