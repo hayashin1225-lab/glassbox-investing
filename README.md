@@ -10,4 +10,5 @@ Glassbox Investing — 投資研究ソフトと「会計の公共化」。See th
 
 ## Provisional Canon / 準正本
 
+- [Investment Cognition Closed Loop](canon/investment-cognition-closed-loop.md) — 「問い → 調査 → 判断 → 検証 → 学習」を閉じる第一コア製品コンセプト。三つの認知状態、可逆性、No Trade、事後検証を含む。実装・実利用後に正本化を再判定する。
 - [Software Studio Operating Model](canon/software-studio-operating-model.md) — 外販の「月刊正規空母」と社内の「週間軽空母」を分ける製品開発・社内ツール運用仮説。未実践のため、実運用後に正本化を再判定する。
