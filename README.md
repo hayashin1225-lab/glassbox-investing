@@ -5,6 +5,7 @@ Glassbox Investing — 投資研究ソフトと「会計の公共化」。See th
 ## Canon
 
 - [Business Principles](canon/business-principles.md) — 透明化を選ぶ事業上の理由と、会社を独立に解釈可能な対象として開く原則
+- [Brand Identity](canon/brand-identity.md) — 正式ブランド名、日本語読み「グラスボックス・インベスティング」、略称「グラスボックス」、タグライン等
 
 ## Provisional Canon / 準正本
 
