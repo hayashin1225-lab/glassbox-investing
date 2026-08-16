@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Glassbox Investing — 買う前に、一度だけ疑う。Pre-Purchase Check MVP UX prototype." />
+  <title>その銘柄、本物ですか？ | Glassbox Investing</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Glassbox Investing home">
+      <span class="brand-mark">G</span>
+      <span>
+        <strong>Glassbox Investing</strong>
+        <small>See the market. See yourself.</small>
+      </span>
+    </a>
+    <span class="prototype-badge">MVP UX Prototype</span>
+  </header>
+
+  <main class="shell">
+    <section id="entry" class="hero panel">
+      <p class="eyebrow">PRE-PURCHASE CHECK</p>
+      <h1>その銘柄、<br><span>本物ですか？</span></h1>
+      <p class="lead">買う理由は、もう十分聞いた。<br>ここでは、買う前に一度だけ疑います。</p>
+
+      <form id="check-form" class="check-form">
+        <label class="ticker-label" for="ticker">気になっている銘柄</label>
+        <div class="ticker-row">
+          <input id="ticker" name="ticker" autocomplete="off" placeholder="例：7203 / NVDA / POWL" maxlength="24" required />
+          <button type="submit" class="primary">30秒チェック</button>
+        </div>
+
+        <details class="optional">
+          <summary>任意：どこで知った？ 何が気になる？</summary>
+          <fieldset>
+            <legend>どこで知った？</legend>
+            <div class="chips" data-group="source">
+              <button type="button" class="chip" data-value="証券会社">証券会社</button>
+              <button type="button" class="chip" data-value="YouTube">YouTube</button>
+              <button type="button" class="chip" data-value="SNS">SNS</button>
+              <button type="button" class="chip" data-value="書籍・雑誌">書籍・雑誌</button>
+              <button type="button" class="chip" data-value="ニュース">ニュース</button>
+              <button type="button" class="chip" data-value="知人">知人</button>
+              <button type="button" class="chip" data-value="その他">その他</button>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>何が気になる？</legend>
+            <div class="chips" data-group="concern">
+              <button type="button" class="chip" data-value="高値掴み">高値掴み？</button>
+              <button type="button" class="chip" data-value="テーマ先行">テーマだけ？</button>
+              <button type="button" class="chip" data-value="業績">業績は本物？</button>
+              <button type="button" class="chip" data-value="割高">割高じゃない？</button>
+              <button type="button" class="chip" data-value="よく分からない">なんとなく不安</button>
+            </div>
+          </fieldset>
+        </details>
+      </form>
+
+      <div class="microcopy">
+        <span>✓ おすすめ銘柄は出しません</span>
+        <span>✓ Buy / Sell は決めません</span>
+        <span>✓ まず3点だけ確認します</span>
+      </div>
+    </section>
+
+    <section id="result" class="result panel hidden" aria-live="polite">
+      <div class="result-head">
+        <div>
+          <p class="eyebrow">30-SECOND CHECK</p>
+          <h2><span id="result-ticker">—</span> を買う前に</h2>
+          <p id="context-line" class="muted"></p>
+        </div>
+        <button id="reset-top" class="ghost">別の銘柄</button>
+      </div>
+
+      <div class="demo-notice">
+        <strong>UX検証用デモ</strong>
+        <span>現在は実株価・財務データ未接続です。下の内容は「どの情報を、どの順番で見せるか」を試すための検証テンプレートで、投資判断には使えません。</span>
+      </div>
+
+      <section class="intent-card">
+        <p class="label">見る前、どのくらい買う気でしたか？</p>
+        <div class="intent-scale" id="before-intent">
+          <button data-value="1">まだ迷う</button>
+          <button data-value="2">少し買いたい</button>
+          <button data-value="3">かなり買いたい</button>
+          <button data-value="4">ほぼ買うつもり</button>
+        </div>
+      </section>
+
+      <div class="check-title-row">
+        <h3>買う前に、まずこの3点。</h3>
+        <span class="time-pill">約30秒</span>
+      </div>
+
+      <div id="checks" class="checks"></div>
+
+      <button id="detail-toggle" class="secondary">もう少し詳しく見る</button>
+
+      <section id="details" class="details hidden">
+        <h3>深掘りするなら、この順番。</h3>
+        <div class="detail-grid">
+          <article>
+            <span>01</span>
+            <h4>価格</h4>
+            <p>「良い会社」と「今この価格で買う」は別問題。上昇率・期待の織込み・同業比較を確認。</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h4>事業</h4>
+            <p>話題のテーマが本当に売上・利益へ落ちているか。IRの言葉と数字を分けて確認。</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h4>財務</h4>
+            <p>利益率、キャッシュ、借入、希薄化など「成長しても株主に残らない」要因を確認。</p>
+          </article>
+          <article>
+            <span>04</span>
+            <h4>反証</h4>
+            <p>あなたが買いたくなった理由が間違うとしたら何か。反対材料を先に1つ探す。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="after-card">
+        <p class="label">見たあと、今どうですか？</p>
+        <div class="after-actions" id="after-intent">
+          <button data-value="stronger">買う気が強まった</button>
+          <button data-value="same">変わらない</button>
+          <button data-value="weaker">少し弱まった</button>
+          <button data-value="hold">いったん保留</button>
+          <button data-value="skip">今回は見送る</button>
+        </div>
+        <p id="saved-note" class="saved-note hidden">この反応はこの端末内だけに記録しました。</p>
+      </section>
+
+      <div class="bottom-actions">
+        <button id="reset-bottom" class="primary">別の銘柄も確認する</button>
+      </div>
+    </section>
+
+    <section class="principle">
+      <p>Glassbox Principle</p>
+      <blockquote>買う理由は他所でいくらでも手に入る。<br>ここでは、買わない理由も探す。</blockquote>
+    </section>
+  </main>
+
+  <footer>
+    <p>Research support only. This prototype does not provide investment advice, recommendations, or order execution.</p>
+    <p>入力・反応ログはこのUXプロトタイプではブラウザの localStorage のみに保存されます。</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
