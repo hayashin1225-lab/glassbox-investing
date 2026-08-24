@@ -47,20 +47,20 @@ node spike/on-demand-reconstruction/src/cli.js `
 
 ## 7203 live proof (2026-08-24)
 
-The post-comment run at `2026-08-24T14:04:27.701Z` completed from symbol input to report output.
+The narrative-scope correction run at `2026-08-24T14:20:59.151Z` completed from symbol input to report output.
 
 - Company identity: `7203 Toyota Motor Corporation`
 - Successfully retrieved sources: Toyota financial-results index, Toyota FY2027 Q1 Financial Summary PDF, Toyota IR news index, SEC Company Facts API
 - Structured evidence: 23 records
 - Narrative metadata: 20 issuer-controlled items, normalized to 20 clusters
-- Narrative Coverage: `narrative_scope: insufficient`; Issuer `available` (2 domains / 20 clusters), Independent Public `insufficient` (0 domains / 0 clusters)
+- Narrative Coverage: `narrative_scope: issuer`; Issuer `available` (2 domains / 20 clusters), Independent Public `insufficient` (0 domains / 0 clusters)
 - Issuer topics: shareholder returns, earnings, EV, growth
 - Independent Public topics: none generated because coverage failed closed
 - Evidence detectors: 3 executed, 3 detected
 - Fact–Narrative Gap rules: 2 `Evidence ↔ Issuer Narrative` gaps detected
 - Gap direction assessments: Evidence↔Issuer `evaluated`; Evidence↔Independent `insufficient`; Issuer↔Independent `insufficient`
 - Unknowns: 6 price/valuation fields plus Independent Public Narrative `insufficient`; the latest earnings publication date was obtained
-- Replay SHA-256: `07782DE1889DA23AB5AEEB8CED2AA39DB05B306D042EAF750D86A52051E3089A` for both original and replayed `review.json`
+- Replay SHA-256: `EB12F6AF9C3CD8053BA0A8EA6BD1C3C118BC62C656369CDB42875B3EAC5E7BAB` for both original and replayed `review.json`
 
 Observed FY2027 Q1 evidence from the Toyota summary:
 

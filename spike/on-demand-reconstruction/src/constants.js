@@ -1,7 +1,7 @@
-export const ENGINE_VERSION = "spike-2026.2";
-export const RULE_SET = "issue-14-v2";
+export const ENGINE_VERSION = "spike-2026.3";
+export const RULE_SET = "issue-14-v3";
 export const DETECTOR_VERSION = "issue-14-detectors-v1";
-export const NARRATIVE_VERSION = "issue-14-narrative-v2";
+export const NARRATIVE_VERSION = "issue-14-narrative-v3";
 
 export const NARRATIVE_COVERAGE_RULE = {
   minimum_independent_domains: 2,

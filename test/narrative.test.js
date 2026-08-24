@@ -19,21 +19,31 @@ test("deduplicates titles, caps one-domain weight, and extracts topics determini
   assert.equal(returns.score, 3); // duplicate cross-domain copies remain one cluster/one vote
   assert.equal(returns.domains.length, 2);
   assert.equal(first.narrative_scope, "independent_public");
+  assert.equal(first.narrative_coverage.narrative_scope, "independent_public");
   assert.equal(first.narrative_coverage.independent_public_status, "sufficient");
 });
 
-test("issuer-only input fails closed instead of becoming Independent Public Narrative", () => {
+test("issuer-only input reports issuer scope while Independent Public Narrative remains insufficient", () => {
   const result = normalizeNarratives([
     item("1", "Toyota accelerates HEV investment", "global.toyota", "2026-08-20", "issuer"),
     item("2", "Toyota announces shareholder returns", "toyotatimes.jp", "2026-08-19", "issuer")
   ], "2026-08-24T00:00:00Z");
-  assert.equal(result.narrative_scope, "insufficient");
+  assert.equal(result.narrative_scope, "issuer");
+  assert.equal(result.narrative_coverage.narrative_scope, "issuer");
   assert.equal(result.narrative_coverage.issuer_status, "available");
   assert.equal(result.narrative_coverage.independent_domain_count, 0);
   assert.equal(result.independent_public_narrative.status, "insufficient");
   assert.deepEqual(result.independent_public_narrative.topics, []);
   assert.ok(result.issuer_narrative.topics.length > 0);
   assert.ok(result.narrative_items.every((row) => row.narrative_scope === "issuer"));
+});
+
+test("empty input reports insufficient narrative scope", () => {
+  const result = normalizeNarratives([], "2026-08-24T00:00:00Z");
+  assert.equal(result.narrative_scope, "insufficient");
+  assert.equal(result.narrative_coverage.narrative_scope, "insufficient");
+  assert.equal(result.narrative_coverage.issuer_status, "empty");
+  assert.equal(result.independent_public_narrative.status, "insufficient");
 });
 
 test("GDELT items retain issuer origin instead of treating all aggregator results as independent", () => {

@@ -154,7 +154,7 @@ function buildCoverage(clusters, items, rule) {
     independentClusters.length >= rule.minimum_independent_clusters;
   const issuerAvailable = issuerClusters.length > 0;
   return {
-    narrative_scope: independentSufficient ? issuerAvailable ? "mixed" : "independent_public" : "insufficient",
+    narrative_scope: availableNarrativeScope(issuerAvailable, independentSufficient),
     issuer_status: issuerAvailable ? "available" : "empty",
     independent_public_status: independentSufficient ? "sufficient" : "insufficient",
     independent_domain_count: independentDomains.length,
@@ -165,6 +165,13 @@ function buildCoverage(clusters, items, rule) {
     covered_period: dates.length ? { from: dates[0], to: dates.at(-1) } : null,
     threshold: { ...rule }
   };
+}
+
+function availableNarrativeScope(issuerAvailable, independentSufficient) {
+  if (issuerAvailable && independentSufficient) return "mixed";
+  if (issuerAvailable) return "issuer";
+  if (independentSufficient) return "independent_public";
+  return "insufficient";
 }
 
 function buildTopics(clusters, scope, asOf) {

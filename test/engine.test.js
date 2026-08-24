@@ -10,7 +10,8 @@ test("same saved input and rule set produce byte-equivalent review state", () =>
   assert.equal(first.detectors.filter((item) => item.signal === "detected").length, 3);
   assert.ok(first.fact_narrative_gaps.length >= 1);
   assert.ok(first.fact_narrative_gaps.every((gap) => gap.comparison_scope === "evidence_issuer_narrative"));
-  assert.equal(first.narrative_scope, "insufficient");
+  assert.equal(first.narrative_scope, "issuer");
+  assert.equal(first.narrative_coverage.narrative_scope, "issuer");
   assert.equal(first.independent_public_narrative.status, "insufficient");
   assert.deepEqual(first.fact_narrative_gap_assessments.map((row) => row.status), ["evaluated", "insufficient", "insufficient"]);
   assert.equal(first.top_issues.length, 3);
@@ -31,6 +32,7 @@ test("sufficient independent coverage enables independent and cross-layer gap di
   );
   const review = runEngine(input);
   assert.equal(review.narrative_scope, "mixed");
+  assert.equal(review.narrative_coverage.narrative_scope, "mixed");
   assert.equal(review.independent_public_narrative.status, "sufficient");
   assert.ok(review.fact_narrative_gaps.some((gap) => gap.comparison_scope === "evidence_independent_public_narrative"));
   assert.deepEqual(review.fact_narrative_gap_assessments.map((row) => row.status), ["evaluated", "evaluated", "evaluated"]);
