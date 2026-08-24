@@ -1,0 +1,20 @@
+{
+  "7203": {
+    "symbol": "7203",
+    "name": "Toyota Motor Corporation",
+    "name_ja": "トヨタ自動車",
+    "exchange": "TSE",
+    "country": "JP",
+    "sector": "automobiles",
+    "sec_cik": "0001094517",
+    "official_ir_url": "https://global.toyota/en/ir/",
+    "financial_results_url": "https://global.toyota/en/ir/financial-results/",
+    "narrative_query": "Toyota Motor OR トヨタ",
+    "issuer_domains": [
+      "global.toyota",
+      "toyotatimes.jp",
+      "toyota.jp",
+      "toyota.com"
+    ]
+  }
+}
