@@ -2,6 +2,7 @@
 
 Status: Canon / 正本
 Date: 2026-08-24
+Revised: 2026-08-24
 
 ## 位置づけ
 
@@ -55,9 +56,9 @@ Glassbox は、この文脈を単なるノイズとして一律に切り捨て�
 
 ---
 
-## 3. 三層構造
+## 3. 四層構造
 
-Glassbox の銘柄査読は、少なくとも次の三層を分離する。
+Glassbox の銘柄査読は、少なくとも次の四層を分離する。
 
 ### 3.1 Evidence Layer
 
@@ -71,7 +72,6 @@ Glassbox の銘柄査読は、少なくとも次の三層を分離する。
 - PER / PBR 等のバリュエーション
 - 株価の現在位置
 - 配当、業績修正、決算日等のイベント
-- 企業公式説明
 
 各項目には、可能な限り以下を付与する。
 
@@ -82,26 +82,44 @@ Glassbox の銘柄査読は、少なくとも次の三層を分離する。
 - 実績 / 会社予想 / その他の区別
 - 加工・計算方法
 
-### 3.2 Narrative Context Layer
+企業自身による説明文や強調点は、確認可能な一次資料であっても、事実そのものと同一視せず次の Issuer Narrative と区別する。
 
-公開Web上で、現在その銘柄にどのような論点・物語・注意が付着しているかを観測する。
+### 3.2 Issuer Narrative Layer
+
+企業自身が、決算資料、IR、経営者発言、公式メディア等で何を強調し、どのような因果・期待・説明を提示しているかを扱う。
+
+例:
+
+- 成長投資を強調している
+- 株主還元を強調している
+- 一時的要因として利益低下を説明している
+- 特定地域や製品を成長源として提示している
+
+Issuer Narrative は重要な一次情報であるが、会社自身の説明であるため、独立した外部評価とは扱わない。
+
+### 3.3 Independent Public Narrative Layer
+
+企業から独立した報道、解説、調査記事等の公開Web上で、現在その銘柄にどのような論点・物語・注意が付着しているかを観測する。
 
 ここで扱うのは「投資家の真の心理」ではない。
 
 検索順位、SEO、記事転載、報道量、プラットフォーム特性等の影響を受けるため、Glassbox はこれを世論調査やセンチメントの正値として扱わない。
 
-> **Narrative Context は「市場参加者の何％が強気か」ではなく、「公開Web上で現在どの論点が目立っているか」を表す。**
+> **Independent Public Narrative は「市場参加者の何％が強気か」ではなく、「企業から独立した公開Web上で現在どの論点が目立っているか」を表す。**
 
-### 3.3 Glassbox Review Layer
+独立ソースが十分に得られない場合は、Issuer Narrative と混ぜて Public Narrative を装わない。
 
-Evidence と Narrative Context を独立に保持したうえで両者を照合する。
+### 3.4 Glassbox Review Layer
+
+Evidence、Issuer Narrative、Independent Public Narrative を独立に保持したうえで相互に照合する。
 
 中心となる問いは、
 
-- 語られている物語は事実によって支持されているか
+- 会社が語る物語は事実によって支持されているか
+- 外部で語られる物語は事実によって支持されているか
+- 会社と外部で強調点が異なっていないか
 - 一部の数字だけが強調されていないか
-- 重要な反証が物語から抜けていないか
-- 事実と物語の間にどのようなズレがあるか
+- 重要な反証がどちらかの物語から抜けていないか
 - 現時点で未確認のものは何か
 
 である。
@@ -114,24 +132,29 @@ Glassbox の独自査読対象として、**Fact–Narrative Gap** を重視す�
 
 これは「Web上の物語は間違っている」と決めつける仕組みではない。
 
-事実と物語を別レイヤーで保持し、その一致・不一致・過不足を検出する。
+少なくとも以下の三方向を区別して照合する。
+
+1. `Evidence ↔ Issuer Narrative`
+2. `Evidence ↔ Independent Public Narrative`
+3. `Issuer Narrative ↔ Independent Public Narrative`
 
 例:
 
-- 「大幅増益」が頻出する一方、本業の営業利益は減益している
-- 「割安」が頻出する一方、利益予想も大幅に悪化している
-- 「成長期待」が増えている一方、その期待を直接裏付ける開示がまだ弱い
-- 悪材料が多数語られている一方、確認可能な企業数値にはまだ大きな変化が出ていない
+- 会社が「成長投資」を強調する一方、本業利益率と営業CFは悪化している
+- 外部で「大幅増益」が頻出する一方、本業の営業利益は減益している
+- 外部で「割安」が頻出する一方、利益予想も大幅に悪化している
+- 会社は株主還元を強調する一方、外部では還元余力の低下が論点になっている
+- 会社と外部で成長ドライバーとして強調する地域・事業が異なる
 
 ここで出すべきものは Buy / Sell ではなく、
 
-> **この銘柄を理解する際に、事実と現在の物語のどこを分けて見る必要があるか。**
+> **この銘柄を理解する際に、事実・会社の説明・外部の物語のどこを分けて見る必要があるか。**
 
 である。
 
 ---
 
-## 5. Narrative Normalization
+## 5. Narrative Normalization と Coverage
 
 Web検索結果はそのまま投票数として扱わない。
 
@@ -141,12 +164,23 @@ Web検索結果はそのまま投票数として扱わない。
 - 同一通信社・同一原稿の束ね
 - 同一ドメインの過剰代表防止
 - 企業公式 / 報道 / 解説 / その他のソース分類
+- Issuer / Independent の明示的分離
 - 公開日時の保持
 - 古い情報の時間減衰
 - SEO量産記事等の過大評価抑制
 - 独立した複数ソースで語られているかの識別
 
-> **財務数値に Normalization Layer が必要なのと同様に、Narrative にも Normalization Layer が必要である。**
+各Narrative集約には最低限、次のCoverage情報を持たせる方向を採る。
+
+- `narrative_scope`: `issuer` / `independent_public` / `mixed` / `insufficient`
+- `independent_domain_count`
+- `issuer_domain_count`
+- `original_cluster_count`
+- `covered_period`
+
+Independent Public Narrative として表示するための独立性・件数が不足する場合は、`narrative_scope: insufficient` とし、fail-closedする。
+
+> **財務数値に Normalization Layer が必要なのと同様に、Narrative にも Normalization と Coverage 判定が必要である。**
 
 ---
 
@@ -234,8 +268,8 @@ EDINET、e-Stat 等の高品質な公的ソースは有力な Source Connector �
 有力な方向は、
 
 1. ユーザーが銘柄を指定する
-2. 必要な証拠・Web文脈をその場で探索する
-3. ローカルで抽出・正規化する
+2. 必要なEvidence、Issuer Narrative、Independent Public Narrative候補をその場で探索する
+3. ローカルで抽出・正規化・Coverage判定する
 4. Detector群を実行する
 5. Fact–Narrative Gap を含めて論点を圧縮する
 6. 根拠と出典へ戻れる形で提示する
@@ -264,7 +298,7 @@ EDINET、e-Stat 等の高品質な公的ソースは有力な Source Connector �
 
 Narrative Context は新しい総合点でも、強気・弱気判定器でもない。
 
-Evidence と独立して観測し、査読の対象を広げる追加の Detector 群として扱う。
+Issuer Narrative と Independent Public Narrative を分け、Evidence と独立して観測し、査読の対象を広げる Detector 群として扱う。
 
 ---
 
@@ -275,17 +309,18 @@ Evidence と独立して観測し、査読の対象を広げる追加の Detecto
 1. Glassbox は Stock Database の縮小再現を中心価値としない。
 2. 一銘柄ごとの On-Demand Evidence Reconstruction を重視する。
 3. Web検索を、数値取得だけでなく情報環境観測にも利用する。
-4. Evidence と Narrative Context を混ぜず、独立レイヤーとして保持する。
-5. 両者の一致・不一致・不足を Fact–Narrative Gap として査読する。
-6. Web上の言説を市場心理の正値や投票結果として扱わない。
-7. Narrative にも重複排除・ソース分類・時間減衰等の Normalization を行う。
-8. Narrative Context のために製品ランタイムAIを必須化しない。
-9. Price Context は無視しないが、未来予測より現在位置確認を優先する。
-10. 特定データ供給元を製品価値そのものとせず、Source Router / Connector として分離する。
-11. Local / On-Demand を優先するが、取得元の利用条件確認は省略しない。
+4. Evidence、Issuer Narrative、Independent Public Narrative を混ぜず、独立レイヤーとして保持する。
+5. Evidence↔Issuer、Evidence↔Independent、Issuer↔Independent のズレを査読する。
+6. 独立ソース不足時に Issuer Narrative を Public Narrative として代用しない。
+7. Web上の言説を市場心理の正値や投票結果として扱わない。
+8. Narrative にも重複排除・ソース分類・時間減衰・Coverage判定を行う。
+9. Narrative Context のために製品ランタイムAIを必須化しない。
+10. Price Context は無視しないが、未来予測より現在位置確認を優先する。
+11. 特定データ供給元を製品価値そのものとせず、Source Router / Connector として分離する。
+12. Local / On-Demand を優先するが、取得元の利用条件確認は省略しない。
 
 ---
 
 ## 一文定義
 
-> **Glassbox は、銘柄について公開されている事実と、その周囲で現在語られている物語を独立に収集し、その一致・不一致・見落としを再現可能な方法で査読するソフトウェアである。**
+> **Glassbox は、銘柄について確認可能な事実、会社自身が語る物語、企業から独立した公開Web上の物語を分離して収集し、その一致・不一致・見落としを再現可能な方法で査読するソフトウェアである。**
