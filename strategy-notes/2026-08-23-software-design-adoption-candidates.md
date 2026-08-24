@@ -3,29 +3,43 @@
 Status: Working Note / Not Canon
 Original Date: 2026-08-23
 Revised: 2026-08-24
-Scope: 現時点までの対話、Issue #13 調査結果から得た示唆、既存 Working Ledger を踏まえたソフトウェア構造の採用候補
+Scope: 現時点までの対話、Issue #13 調査結果、既存 Working Ledger、および `canon/on-demand-evidence-reconstruction-and-narrative-context.md` を踏まえた実装候補
 
 ---
 
 ## 0. この文書の目的
 
-本書は、Glassbox Investing の実装に入る前に、これまでの会話で形成された設計候補を一度まとめ、後続の人間判断に渡すための作業メモである。
+本書は、Glassbox Investing の実装に入る前に、現時点で有力なソフトウェア構造・レポート構造・取得方式・更新方式をまとめ、後続の人間判断と実装検証へ渡すための作業メモである。
 
-ここで扱うのは**採用候補**であり、正本ではない。
+ここで扱うのは**実装候補**であり、正本ではない。
 
-市場検証、データライセンス確認、法務確認、実装検証、Issue #13 の追加調査によって変更・撤回する前提で保存する。
+上位原則は以下の正本に従う。
 
-本書が答えようとする問いは次のとおり。
+- `canon/cognitive-plasticity-and-decision-foundation.md`
+- `canon/on-demand-evidence-reconstruction-and-narrative-context.md`
 
-> Glassbox を「AI株診断」でも「四季報の再発明」でも「予想屋」でもなく、再現可能な銘柄査読ソフトウェアとして作るなら、どのような内部構造・レポート構造・更新方式が有力か。
+2026-08-24 の重要修正は二つ。
 
-2026-08-24 の重要修正として、**売り切りモデルと再現性を守るため、製品ランタイムでは有償AI APIを使用しない。初版ではOSS LLMの内蔵も前提としない。AIは開発・研究工程、およびユーザー自身の外部AIへの引き継ぎで利用する。**
+1. **製品ランタイムで有償AI APIを使用しない。初版ではOSS LLMの内蔵も前提としない。**
+2. **Glassbox は Stock Database を中心にせず、1銘柄ごとに Evidence と Narrative Context をオンデマンドで再構成する。**
+
+したがって、旧来の
+
+> 数値取得 → Normalization → Detector → Priority Router → Report
+
+だけでは不十分であり、取得前段と Narrative 系統を明示した次の構造へ改める。
+
+> 銘柄入力
+> → Search Plan / Source Router
+> → Evidence Retrieval + Narrative Retrieval
+> → Evidence Normalization + Narrative Normalization
+> → Detector群 + Fact–Narrative Gap
+> → Priority Router
+> → Report
 
 ---
 
 # 1. 製品の中心定義
-
-## 1.1 採用候補：銘柄を管理せず、銘柄を査読する
 
 Glassbox の対象は銘柄そのもの。
 
@@ -37,12 +51,12 @@ Glassbox の対象は銘柄そのもの。
 - バリュエーション
 - 株価の現在位置
 - 決算・業績修正・配当等の企業イベント
-- 金利・為替・商品価格・業種指数等の外部環境
-- 市場で注目されている論点
-- その論点を支持する証拠
-- その論点を弱める証拠
+- 必要に応じた市場・マクロ文脈
+- 公開Web上で現在注目されている論点
+- その論点を支持・弱化する証拠
+- Fact–Narrative Gap
 - 未確認事項
-- 何が変われば現在の見方を再査読すべきか
+- 再査読すべき条件
 
 扱わない候補:
 
@@ -58,11 +72,15 @@ Glassbox の対象は銘柄そのもの。
 
 > **銘柄を管理しない。銘柄を査読する。**
 
+さらに、データ保有の競争ではなく、
+
+> **Stock Database ではなく Stock Reconstruction。**
+
+を実装側でも採る。
+
 ---
 
-# 2. 価格納得感を作る三層
-
-現時点で有力なのは以下の三層。
+# 2. 商品価値を作る三層
 
 ## 2.1 第1層：レポート項目
 
@@ -72,87 +90,207 @@ Glassbox の対象は銘柄そのもの。
 
 - 四季報的な基礎情報は必要十分に押さえる
 - 既存製品の良い項目は真似る
-- ただし情報量競争には行かない
-- Glassbox 独自項目は「査読」に集中させる
+- 情報量競争には行かない
+- Glassbox独自項目は「査読」に集中する
+- 数値だけでなく、現在その数値がどの文脈で語られているかも分離表示する
 
-> **基礎情報 × 独自査読項目のハイブリッド**
+> **基礎情報 × 独自査読 × Narrative Context**
 
 ## 2.2 第2層：査読アルゴリズム
 
 商品の中核。
 
-数字を並べるだけではなく、
-
-> **どの数字を、どの条件で、どう解釈可能な状態へ変換するか**
+> **どの証拠を、どの条件で、どう解釈可能な状態へ変換するか**
 
 を決定論的に処理する。
 
-AIを使わず再現可能な部分はコードへ寄せる。
-
 理想状態:
 
-> **同じ入力データ + 同じ Engine version = 同じ査読結果**
+> **同じ取得結果 + 同じ Engine version = 同じ査読結果**
+
+Webは変動するため、完全再現性の対象は「外部世界そのもの」ではなく、**取得時点の保存済み証拠集合に対するEngine出力**とする。
 
 ## 2.3 第3層：AI引き継ぎプロンプト
 
-これはGlassbox内蔵AIではない。
+Glassbox内蔵AIではない。
 
-Glassbox が確認した事実・Detector結果・未確認点・出典・次に調べるべき問いを構造化し、ユーザーが自分の ChatGPT / Claude / Gemini 等へコピーして使えるプロンプトを生成する。
-
-候補内容:
-
-- 現在確認済みの事実
-- 使用した数値と期間
-- 主要論点
-- 支持材料
-- 弱める材料
-- 未確認事項
-- 次に調べるべき一次資料
-- 売買方向を返さない等の調査条件
-
-Glassbox 自身が巨大な汎用調査AIになる必要はない。
+確認済み事実、Narrative Context、Detector結果、Fact–Narrative Gap、未確認点、出典、次に調べるべき問いを構造化し、ユーザー自身の ChatGPT / Claude / Gemini 等へコピーできる形で出力する。
 
 ---
 
-# 3. レポートの基本構造
+# 3. Source Acquisition Architecture
 
-## 3.1 長い表ではなく「論点を圧縮」する
+## 3.1 On-Demand Retrieval
 
-30〜50指標をそのまま見せてもライトユーザーには理解しにくい。
+全銘柄を常時同期しない。
 
-一方、単一総合点へ圧縮すると、異なる尺度を一つの数字へ潰し、
+ユーザーが指定した1銘柄について、その時点で必要な証拠を探索する。
 
-- 78点だから買ってよい
-- 42点だから悪い銘柄
+有力フロー:
 
-のような誤読を誘発しやすい。
+1. 銘柄コード / 会社名入力
+2. Identity Resolver で企業同定
+3. Search Plan生成
+4. Source Routerが候補ソースを選択
+5. Evidence Retrieval
+6. Narrative Retrieval
+7. ローカル保存
+8. 正規化・Detector実行
 
-そこで、**評価の集約ではなく論点の圧縮**を行う。
+## 3.2 Search Plan
 
-表面:
+検索そのものを場当たりにしない。
 
-> **この銘柄を見るなら、いま重要なのはこの3点です。**
+候補クエリ群:
 
-裏側:
+- 企業名 + 決算
+- 企業名 + 業績
+- 企業名 + IR
+- 企業名 + 配当
+- 企業名 + 下落理由
+- 企業名 + 割安
+- 企業名 + リスク
+- 企業名 + 業界固有論点
 
-- 多数の Detector
-- 多数の数値
-- 複数の比較軸
-- 適用可否判定
-- 失敗条件判定
-- 出典管理
+ただし検索エンジンのHTMLスクレイピングを当然視しない。
 
-原則候補:
+**製品として合法・安定利用できる検索方式、公開検索API、ブラウザ経由の利用可否、各サイト利用条件を実証段階で確認する。**
 
-> **Glassbox は銘柄を採点しない。銘柄を見るための視野を圧縮して提示する。**
+## 3.3 Source Router
+
+候補ソース:
+
+- 企業公式IR
+- 公的開示
+- 公的統計
+- 商用利用条件を満たす構造化データ
+- 公開Web上の報道・解説
+- 将来追加する許諾済みデータコネクタ
+
+EDINET、e-Stat、J-Quants 等は**製品存在条件ではなく Source Connector 候補**とする。
 
 ---
 
-# 4. 分析手法を「採点器」ではなく「検出器」として扱う
+# 4. Evidence Layer
 
-## 4.1 Detector Architecture
+確認可能な事実・数値・イベントを扱う。
 
-Issue #13 で調べる古今の分析手法は、「どれが最強か」を決めるためではなく、異なる異常・特徴・論点を検出する部品として扱う。
+候補:
+
+- 売上
+- 営業利益
+- 純利益
+- EPS
+- 営業CF / FCF
+- 財務状態
+- PER / PBR 等
+- 株価の現在位置
+- 配当
+- 業績修正
+- 次回決算日
+- 企業公式説明
+
+各Evidenceには可能な限り以下を付与する。
+
+- Source
+- Source type
+- Publication date
+- Retrieved at
+- Period
+- Actual / Company Forecast / その他
+- Currency
+- Unit
+- Extraction method
+- Transformation / Calculation
+- License / Usage condition metadata
+
+---
+
+# 5. Narrative Context Layer
+
+公開Web上で、その銘柄について現在どの論点・物語・注意が目立っているかを観測する。
+
+これは世論調査でもセンチメントの正値でもない。
+
+> **「投資家の何％が強気か」ではなく、「公開Web上で現在どの論点が目立っているか」を扱う。**
+
+候補観測対象:
+
+- 業績改善 / 悪化
+- 割安 / 割高
+- 配当 / 株主還元
+- 成長期待
+- 規制
+- 中国
+- 関税
+- 為替
+- 原材料
+- 不祥事
+- 生産 / 供給制約
+- 業種固有テーマ
+
+AIなしの初版では、完全な自然言語理解を目指さず、
+
+- タイトル
+- スニペット
+- 公開日時
+- ドメイン
+- ソース種別
+- キーワード / 辞書
+- 出現頻度
+- 時系列変化
+
+を中心に検出する。
+
+---
+
+# 6. Normalization Layer
+
+## 6.1 Evidence Normalization
+
+分析ロジック以前に、入力データの意味を揃える。
+
+候補:
+
+- 会計年度
+- 四半期 / 通期
+- IFRS / J-GAAP / US-GAAP
+- 継続 / 非継続事業
+- 株式分割・併合
+- EPS分母
+- 実績 / 会社予想 / 市場予想
+- 通貨・単位
+- M&A前後
+- セグメント変更
+- 会計方針変更
+- 一過性損益
+- restatement / 過年度修正
+- 複数ソース間の数値不一致
+
+> **検出器より前に、比較可能な証拠を作る。**
+
+## 6.2 Narrative Normalization
+
+検索結果を一件一票として扱わない。
+
+最低限の候補:
+
+- 同一記事・転載記事の重複除去
+- 同一通信社 / 同一原稿のクラスタリング
+- 同一ドメインの過剰代表抑制
+- 企業公式 / 報道 / 解説 / その他の分類
+- 公開日時保持
+- 古い情報の時間減衰
+- SEO量産記事の過大評価抑制
+- 独立ソース数の識別
+
+> **財務数値と同様に、NarrativeにもNormalizationが必要。**
+
+---
+
+# 7. Detector Architecture
+
+古今の分析手法を「採点器」ではなく Detector として扱う。
 
 候補:
 
@@ -168,68 +306,54 @@ Issue #13 で調べる古今の分析手法は、「どれが最強か」を決�
 - PER / PBR / EV/EBITDA
 - historical valuation range
 - peer comparison
-- drawdown
-- relative performance
-- volatility
 - event calendar
 - macro sensitivity
+- narrative topic surge
+- source convergence
+- fact–narrative divergence
 
 これらを単一スコアへ加算しない。
 
+各Detectorは少なくとも以下を持つ。
+
+1. `signal`
+2. `applicability`
+3. `failure_modes`
+4. `evidence_refs`
+5. `narrative_refs`（該当時）
+6. `period`
+7. `confidence_basis`
+8. `sector_adjustment`
+9. `engine_version`
+
 > **各分析手法は採点器ではなく、特定の観点を発見する Detector として扱う。**
 
-## 4.2 Detector の標準メタデータ候補
+---
 
-各 Detector は出力値だけでなく、以下を持つ。
+# 8. Fact–Narrative Gap
 
-1. `signal` — 何を検出したか
-2. `applicability` — この企業・業種・期間に適用してよいか
-3. `failure_modes` — どの条件で誤判定しやすいか
-4. `evidence` — 判定に使った一次データ
-5. `period` — 対象期間
-6. `confidence_basis` — 判定根拠の完全性
-7. `sector_adjustment` — 業種補正の有無
-8. `engine_version` — どのルール版で処理したか
+Glassbox独自査読の有力中核。
 
-原則候補:
+Evidence と Narrative Context を独立に保持し、両者の一致・不一致・過不足を見る。
 
-> **Glassbox の価値は「正しい指標を選ぶこと」だけではなく、各指標が何を検出でき、何を検出できないかまで管理すること。**
+例:
+
+- 「大幅増益」が頻出する一方、本業の営業利益は減益
+- 「割安」が頻出する一方、会社予想利益も大幅悪化
+- 「成長期待」が増える一方、一次資料での裏付けが弱い
+- 悪材料が多く語られる一方、企業数値にはまだ重大変化が出ていない
+
+出力すべきものは Buy / Sell ではなく、
+
+> **この銘柄を理解する際に、事実と現在の物語のどこを分けて見る必要があるか。**
 
 ---
 
-# 5. Normalization Layer
-
-分析ロジック以前に、入力データの意味を揃える。
-
-候補処理:
-
-- 会計年度の正規化
-- 四半期 / 通期の区別
-- IFRS / J-GAAP / US-GAAP 差異の扱い
-- 継続事業 / 非継続事業
-- 株式分割・併合補正
-- EPS の分母差異
-- 実績 / 会社予想 / 市場予想の区別
-- 通貨・単位の統一
-- M&A 前後の比較可能性
-- セグメント変更
-- 会計方針変更
-- 一過性損益の分離候補
-- restatement / 過年度修正
-
-> **検出器より前に、比較可能なデータを作る。**
-
-ここが崩れると、その後の精密な分析も全部誤るため、実装優先度は高い。
-
----
-
-# 6. Evidence Engine と Interpretation を分離する
-
-## 6.1 A. Deterministic Evidence Engine — 製品本体の中核
+# 9. Deterministic Evidence Engine
 
 担当:
 
-- 数値取得
+- 取得結果の保存
 - 正規化
 - 計算
 - 期間比較
@@ -238,76 +362,49 @@ Issue #13 で調べる古今の分析手法は、「どれが最強か」を決�
 - バリュエーション比較
 - 価格位置
 - イベント日数
-- 相対騰落
+- Narrative topic検出
+- Fact–Narrative Gap検出
 - Provenance
-- Detector 実行
+- Detector実行
 - Priority Router
 - 定型レポート生成
 
-**初版ではここだけで商品として成立させる。**
-
-## 6.2 B. Interpretation / Narrative — 「必要な出力概念」であり、内蔵AIを意味しない
-
-必要になり得るもの:
-
-- 決算資料から主要論点を整理する
-- 市場で語られている期待を分類する
-- なぜ利益が変化したかを説明する
-- 一過性要因を説明する
-- 数値と論点を対応付ける
-- ユーザー向け自然言語へ圧縮する
-
-ただし、これを実現するために製品ランタイムへAIを入れることは初版の前提としない。
-
-実現方法の優先順位候補:
-
-1. 決定論的ルール・テンプレートで可能な部分を実装
-2. 構造化データ・企業開示の定型項目から生成
-3. 開発・研究工程でAIを使い、再現可能なルールへ落とす
-4. それでも自然言語深掘りが必要なら、ユーザー自身の外部AIへ引き継ぐ
-5. OSSローカルAI内蔵は将来の独立検討事項とし、初版要件にしない
-
-つまり、
-
-> **開発にはAIを使ってよい。製品価値はAIランタイムなしで成立させる。**
+**初版ではここだけで商品価値を成立させる。**
 
 ---
 
-# 7. レポートの表示層
+# 10. レポート構造
 
-## 7.1 最上段：30秒ビュー
+## 10.1 30秒ビュー
 
 候補:
 
 - 銘柄名 / コード
-- 最終データ更新時刻
+- 最終取得時刻
 - Engine version
 - 「いま見るべき3点」
 - 重大な反証候補
+- Fact–Narrative Gap
 - 未確認点
 - 次の重要イベント
 
-ここでは情報量を抑える。
+> **評価を集約するのではなく、論点を圧縮する。**
 
-> **数十個の内部検出結果を、人間が理解できる数個の論点へ圧縮する。**
-
-## 7.2 詳細ビュー
-
-候補セクション:
+## 10.2 詳細ビュー
 
 1. 企業カルテ
 2. Fundamental Review
 3. Valuation Review
 4. Price Context
 5. Event & Market Context
-6. Counterevidence
-7. Unknowns
-8. Sources / Provenance
-9. AI引き継ぎプロンプト
+6. Narrative Context
+7. Fact–Narrative Gap
+8. Counterevidence
+9. Unknowns
+10. Sources / Provenance
+11. AI引き継ぎプロンプト
 
-## 7.3 企業カルテ
-
-四季報的基礎はここへ置く。
+## 10.3 企業カルテ
 
 候補:
 
@@ -329,11 +426,11 @@ Issue #13 で調べる古今の分析手法は、「どれが最強か」を決�
 - 株価レンジ
 - 主要競合
 
-ただし基礎情報そのものを商品核にしない。
+基礎情報そのものを商品核にはしない。
 
 ---
 
-# 8. Fundamental Review
+# 11. Fundamental Review
 
 候補:
 
@@ -341,7 +438,7 @@ Issue #13 で調べる古今の分析手法は、「どれが最強か」を決�
 - 利益率の推移
 - 本業利益と最終利益の乖離
 - EPS成長の源泉
-- 営業CF / FCF の質
+- 営業CF / FCFの質
 - 利益とCFの乖離
 - 運転資本変動
 - 有利子負債
@@ -352,7 +449,7 @@ Issue #13 で調べる古今の分析手法は、「どれが最強か」を決�
 - 一過性要因
 - 会計上の異常候補
 
-結果は「良い / 悪い」だけでなく、
+結果は「良い / 悪い」ではなく、
 
 > **何がそう見せているのか**
 
@@ -360,7 +457,7 @@ Issue #13 で調べる古今の分析手法は、「どれが最強か」を決�
 
 ---
 
-# 9. Valuation Review
+# 12. Valuation Review
 
 候補:
 
@@ -376,52 +473,44 @@ Issue #13 で調べる古今の分析手法は、「どれが最強か」を決�
 
 > **良い会社と、良い価格を分ける。**
 
-一つの適正株価へ集約しない方向が有力。
-
-DCF 等は内部補助として使う余地はあるが、仮定依存性が高いため、単一の「理論株価」として前面表示するのは慎重にする。
+一つの適正株価へ集約しない。
 
 ---
 
-# 10. Price Context
+# 13. Price Context — 初版は軽量化
 
-## 10.1 チャートを予測ではなく文脈に使う
+新正本に合わせ、Price Contextの役割を未来予測ではなく現在位置確認へ限定する。
 
-候補:
+初版候補:
 
+- 現在値または直近終値
+- 前日比
 - 52週高値 / 安値
-- 直近高値からのドローダウン
-- 20 / 60 / 200日移動平均との位置
-- 出来高変化
-- ボラティリティ
-- 下落速度
-- TOPIX / 日経等との相対騰落
-- 業種指数との相対騰落
+- 52週レンジ上の現在位置
+- 高値からの下落率
 
-「買い時」「押し目買いシグナル」は出さない。
+初版の必須要件から外す候補:
+
+- RSI
+- MACD
+- ボリンジャーバンド
+- ローソク足パターン
+- 20 / 60 / 200日移動平均判定
+- 出来高パターン
+- 複雑なボラティリティ指標
+- 押し目買いシグナル
+
+> **Price Context は未来予測器ではなく、現在位置確認器。**
 
 典型的な査読テンプレート:
 
 > **安くなったのか、悪くなったのか。**
 
-## 10.2 下落査読は Engine 全体ではなくテンプレートの一つ
-
-同じ思想で、
-
-- 上がった → **良くなったのか、期待だけ膨らんだのか**
-- 増益した → **稼ぐ力が強くなったのか、一過性なのか**
-- 増配した → **余裕が増えたのか、無理して配っているのか**
-- 高ROE → **事業が強いのか、レバレッジなのか**
-- 低PER → **割安なのか、悪化を織り込んでいるのか**
-
-より一般化した Engine の役割候補:
-
-> **表面に見える変化を、別の独立証拠で査読する。**
-
 ---
 
-# 11. Event & Market Context
+# 14. Event & Market Context
 
-## 11.1 Event Risk / Information Change Risk
+## 14.1 Event / Information Change Risk
 
 予測ではなく、
 
@@ -439,17 +528,15 @@ DCF 等は内部補助として使う余地はあるが、仮定依存性が高�
 - 自社株買い
 - 増資
 - 大型IR
-- 製品発表等
+- 製品発表
 
-例えば、
+例:
 
 > 次回決算まで4日。現在の査読は前回開示情報に基づく。
 
-という表示は、売買助言をせず実用性を出せる。
+## 14.2 市況の扱い
 
-## 11.2 市況の扱い
-
-候補:
+必要な企業のみ、
 
 - 金利
 - 為替
@@ -458,17 +545,19 @@ DCF 等は内部補助として使う余地はあるが、仮定依存性が高�
 - 業種指数
 - 景気指標
 
-> **企業固有要因と、市場全体・業種全体要因を分離する。**
+を使う。
+
+初版ではマクロを厚くしすぎない。
 
 ---
 
-# 12. Sector Adapter
+# 15. Sector Adapter
 
 全銘柄を同一指標だけで見ると誤判定が増えるため、
 
 > Common Detector Set
 > + Sector Adapter
-> + Company-specific Event Context
+> + Company-specific Event / Narrative Context
 
 を候補とする。
 
@@ -506,58 +595,40 @@ DCF 等は内部補助として使う余地はあるが、仮定依存性が高�
 
 ---
 
-# 13. 「重要な3点」をどう選ぶか
+# 16. Priority Router
 
-## 13.1 最重要の未解決設計
-
-総合点を避けても、大量の Detector から何を前面表示するかは決める必要がある。
+総合点を避けても、大量のDetectorから何を前面表示するかは決める必要がある。
 
 候補評価軸:
 
 - 異常度
-- 前年 / 過去平均からの変化幅
+- 前年 / 過去平均との差
 - 同業平均との差
 - 企業価値への影響範囲
-- 一過性か継続性か
+- 一過性 / 継続性
 - 次回イベントまでの近さ
 - データ完全性
 - ユーザーが通常見落としやすい論点か
-- 複数 Detector が独立に同じ論点を支持しているか
+- 複数Detectorが独立に同じ論点を支持しているか
+- Narrative上の注目度
+- Fact–Narrative Gapの大きさ
+- 独立ソース数
 
-これらを単一数値へ足し上げる必要はない。
-
-## 13.2 Priority Router
-
-Detector output を、
-
-- 重要論点
-- 補助論点
-- 背景情報
-- 無効 / 適用外
-
-へルーティングする。
+これらを必ず一つの数値へ足し上げる必要はない。
 
 ユーザーには「なぜこの論点が前面に出たか」を追跡可能にする。
 
-例:
-
-> この論点が前面に出た理由
-> - 営業利益率が3年中央値から大幅低下
-> - 営業CFも同方向に悪化
-> - 同業平均との差も拡大
-> - 次回決算まで12日
-
-この説明可能性が、単なるAI要約との差別化候補になる。
-
 ---
 
-# 14. Provenance は全層の横串
+# 17. Provenance と Retrieval Log
 
 全数値・判定・説明に可能な限り以下を付与する。
 
 - Source
 - Source type
+- URL
 - Publication date
+- Retrieved at
 - Period
 - Actual / Company Forecast / Consensus
 - Currency
@@ -566,187 +637,103 @@ Detector output を、
 - Normalization applied
 - Detector version
 - Engine version
+- Source usage / license metadata
 
-UIでは最初から全部見せなくてよいが、掘れば確認できるようにする。
+さらにWebオンデマンド方式では、**何を探し、何が取れ、何が取れなかったか**を `retrieval_log` として保持する。
 
-これは「AI幻覚なし」をコピーではなく機能に変える。
+これは再現性とUnknowns管理のために重要。
 
 ---
 
-# 15. Engine versioning
-
-## 15.1 Glassbox Engine 2026 / 2027
+# 18. Engine versioning
 
 データと方法論を分けて更新する。
 
-### データ
-- 日次 / 決算 / イベントに応じて更新
+### 取得データ
+- 検索・決算・イベントに応じて更新
 
 ### Engine
 - 方法論は版管理
-- 過去の査読を後から新ルールで黙って書き換えない
+- 過去の査読を新ルールで黙って書き換えない
 
 候補表示:
 
-- `Data as of: 2026-08-23`
+- `Data / Retrieval as of: 2026-08-24 20:30 JST`
 - `Glassbox Engine: 2026.1`
 - `Rule Set: 2026`
 
-候補販売モデル:
-
-- Glassbox 2026 は買い切り
-- 2026 のデータ更新・不具合修正は継続
-- 2027 で新 Detector、業種補正、アルゴリズム改善を提供
-- 旧版を停止しない
-
-商品名自体は `Glassbox` とし、内部・レポート上で `Engine 2026` を表示する案が有力。
+同じ保存済み取得結果 + 同じEngineで同じ結果になることを再現性の基準とする。
 
 ---
 
-# 16. AI利用方針 — 2026-08-24 改訂
+# 19. AI利用方針
 
-## 16.1 採用候補：製品ランタイムでは有償AI APIを使用しない
-
-売り切りモデルでは、利用回数に応じて開発側へ推論費用が発生する設計は単位経済と相性が悪い。
-
-したがって初版の原則候補は、
+## 19.1 製品ランタイムでは有償AI APIを使用しない
 
 > **製品ランタイムで有償AI APIを使用しない。**
 
 ChatGPT API、Claude API、Gemini API 等をGlassbox側の継続原価として組み込まない。
 
-## 16.2 初版ではOSS LLMの内蔵も前提にしない
+## 19.2 初版ではOSS LLM内蔵も前提にしない
 
-ローカルOSSモデルならAPI費用は発生しないが、
+Narrative Contextは初版ではルール・辞書・メタデータ・重複除去等で検出する。
 
-- モデル配布容量
-- CPU / GPU 性能差
-- メモリ要件
-- 推論速度
-- OS対応
-- モデルライセンス
-- モデル更新
-- 出力揺らぎ
-- 幻覚
-- サポート工数
+自然言語の完全理解を製品成立条件にしない。
 
-を新たに抱える。
-
-現時点ではGlassboxの中核価値はLLMそのものではなく、
-
-> **Normalization → Detector群 → Failure Mode管理 → Priority Router → 論点圧縮 → Provenance**
-
-にある。
-
-したがってOSS LLM内蔵は、将来どうしても必要性が確認された場合の**独立した追加モジュール候補**とし、Engine 2026 の成立条件にはしない。
-
-## 16.3 製品本体でAIを使わない領域
-
-- 財務数値計算
-- YoY / QoQ
-- 比率計算
-- PER / PBR 等
-- 過去レンジ
-- 相対騰落
-- 移動平均
-- イベント日数
-- 閾値判定
-- 出典・期間管理
-- Detector 実行
-- Priority Router
-- Provenance
-- 定型レポート生成
-
-## 16.4 AIを使う場所は「製品外」または「開発工程」
+## 19.3 AIを使う場所
 
 ### A. 開発・研究工程
 
-- Issue #13 の分析手法調査
-- IR文書の構造研究
+- 分析手法調査
+- IR文書構造研究
 - 業種別論点抽出
+- Narrative辞書生成候補
 - 失敗条件探索
 - ルール候補生成
-- 回帰テスト用ケース作成
-
-ここではAIを大量に利用してよい。ただし最終的に製品へ入る判定ロジックは、可能な限り再現可能なルールへ落とす。
+- 回帰テストケース作成
 
 ### B. ユーザー自身の外部AI
 
-GlassboxはAPI連携せず、**AI引き継ぎプロンプトを生成してコピー可能にする。**
-
-ユーザーは自分が契約・利用している ChatGPT / Claude / Gemini 等へ貼り付ける。
-
-Glassbox側には、
-
-- APIキー管理
-- AI従量課金
-- 推論原価
-- 外部AI障害依存
-
-を発生させない。
-
-## 16.5 AI引き継ぎプロンプトの価値
-
-プロンプトは単なる「この銘柄を分析して」ではなく、Glassboxの査読済み構造を渡す。
-
-候補:
-
-- 確認済み事実
-- Detector結果
-- 使用期間
-- 出典
-- Counterevidence
-- Unknowns
-- 次に確認する一次資料
-- 調査上の禁止事項
-
-つまり、
-
-> **Glassboxで事実と論点を整え、必要なときだけユーザー自身のAIへ深掘りを渡す。**
-
-## 16.6 原則候補
+GlassboxはAPI連携せず、AI引き継ぎプロンプトを生成してコピー可能にする。
 
 > **開発にはAIを使う。製品はAIに依存しない。**
 
-> **Glassbox Engine 2026 単独で商品価値を成立させる。**
-
 ---
 
-# 17. レポート JSON / 内部データモデル候補
+# 20. 内部データモデル候補
 
-構造例:
+最低限、以下を分離する。
+
+```text
+company_identity
+search_plan
+sources
+retrieval_log
+evidence
+narrative_items
+narrative_clusters
+narrative_topics
+fact_narrative_gaps
+detectors
+events
+unknowns
+top_issues
+report
+```
+
+概念例:
 
 ```json
 {
   "symbol": "7203",
-  "as_of": "2026-08-23",
+  "as_of": "2026-08-24T20:30:00+09:00",
   "engine_version": "2026.1",
-  "normalization_version": "2026.1",
-  "top_issues": [
-    {
-      "title": "利益の質",
-      "summary": "純利益増に対して本業利益は弱い",
-      "why_selected": [
-        "operating_income_yoy_negative",
-        "net_income_yoy_positive",
-        "non_operating_gain_material"
-      ],
-      "evidence_refs": ["e123", "e124"],
-      "unknown_refs": ["u12"]
-    }
-  ],
-  "detectors": [
-    {
-      "id": "earnings-quality-001",
-      "status": "triggered",
-      "applicable": true,
-      "signal": "net_income_operating_income_divergence",
-      "failure_modes": ["large_planned_asset_sale"],
-      "evidence_refs": ["e123", "e124"]
-    }
-  ],
-  "events": [],
+  "retrieval_log": [],
   "evidence": [],
+  "narrative_clusters": [],
+  "fact_narrative_gaps": [],
+  "detectors": [],
+  "top_issues": [],
   "unknowns": []
 }
 ```
@@ -757,62 +744,61 @@ Glassbox側には、
 
 ---
 
-# 18. 体験版との接続
+# 21. 体験版との接続
 
 有力候補:
 
 > **任意の1銘柄を、製品版と同品質で1回だけフル査読**
 
-理由:
-
-- 機能制限版では製品価値が伝わらない
-- 日数制限では利用タイミングと噛み合わない
-- レポート構造そのものが価格納得感の中心
-
 体験で見せるもの:
 
 - 30秒ビュー
-- 重要論点
 - Fundamental Review
 - Valuation Review
 - Price Context
 - Event Context
+- Narrative Context
+- Fact–Narrative Gap
 - Provenance
 - AI引き継ぎプロンプト
 
 製品版との差は品質ではなく、査読可能回数に置く方向が有力。
 
+オンデマンド体験生成方式を採る場合も、取得元の利用条件を別途満たす。
+
 ---
 
-# 19. データライセンスは早期確認事項
+# 22. データライセンス / Web利用条件
 
-「APIで取得できる」ことと、
+「Webで見える」ことと、
 
 - 商用利用できる
+- 自動取得できる
 - 保存できる
 - ユーザーへ再表示できる
 - 派生指標を販売できる
 
 ことは別。
 
-四季報的基礎情報を製品へ入れるなら、データ供給元のライセンス条件でUI・原価・製品価格が変わる。
+新設計では「最適な単一データベンダーを探す」より、**Source Routerが利用可能なソースを組み合わせる**方向へ重心を移す。
+
+ただし利用条件問題は消えない。
 
 早期確認候補:
 
-- 株価
+- 検索サービス / 検索API
+- 企業IR
 - 財務
-- コンセンサス
+- 株価
 - 企業イベント
-- 業種指数
-- 金利 / 為替 / 商品価格
+- 報道記事のタイトル / スニペット / 本文
+- 公的統計
 
-ここは初期アーキテクチャ制約として扱う。
+各Sourceには `source_usage_policy` 等のメタデータを持たせる候補。
 
 ---
 
-# 20. 法務・表現上の境界
-
-未確定であり専門確認が必要。
+# 23. 法務・表現上の境界
 
 前面に出さない候補:
 
@@ -830,6 +816,8 @@ Glassbox側には、
 - 過去とのズレ
 - 同業とのズレ
 - 業績・CF・財務の変化
+- 公開Web上で目立つ論点
+- Fact–Narrative Gap
 - 反証材料
 - 未確認事項
 - 次回情報更新イベント
@@ -839,39 +827,46 @@ Glassbox側には、
 
 ---
 
-# 21. 採用候補の優先度
+# 24. 採用候補の優先度
 
 ## A. 強く採用候補
 
 - 銘柄管理ではなく銘柄査読
-- 四季報的基礎 + Glassbox独自査読のハイブリッド
+- Stock Reconstruction
+- On-Demand Retrieval
+- Search Plan / Source Router
+- Evidence Layer と Narrative Context Layer の分離
+- Evidence Normalization
+- Narrative Normalization
+- Fact–Narrative Gap
 - 単一総合点を中心にしない
 - 論点圧縮型UI
 - Detector Architecture
 - Detectorごとの適用条件・失敗条件管理
-- Normalization Layer
-- Deterministic Evidence Engine
-- Provenance
+- Provenance / Retrieval Log
 - Engine versioning
-- Fundamental を基底に Price / Event / Market Context を重ねる
-- 「下落査読」はテンプレートの一つとして採る
+- Fundamental を基底に Price / Event / Narrative Context を重ねる
+- Price Contextの軽量化
 - Event / Information Change Risk
 - Common Engine + Sector Adapter
 - Priority Router
-- **製品ランタイムで有償AI APIを使わない**
-- **Engine単独で商品価値を成立させる**
-- **外部AIへの構造化引き継ぎプロンプト**
+- 製品ランタイムで有償AI APIを使わない
+- Engine単独で商品価値を成立させる
+- 外部AIへの構造化引き継ぎプロンプト
 
 ## B. 有力だが設計検証が必要
 
-- 市場で流通する期待を、AIなしでどこまで構造化できるか
-- 「いま見るべき3点」の Priority Router 具体ルール
-- DCF等の仮定依存手法
-- 市況感応度の企業別推定
+- Web検索 / 検索APIを製品から安定・合法利用する方式
+- AIなしでNarrative Contextをどこまで有用に構造化できるか
+- Narrative重複排除の精度
+- Fact–Narrative Gapのルール設計
+- Priority Router具体ルール
+- Source Routerのフォールバック設計
+- 同一数値の複数ソース不一致処理
+- Sector Adapter
 - 年次有償アップグレード
 - 1銘柄フル無料体験
 - 自然言語説明を決定論的テンプレートでどこまで生成できるか
-- 将来の任意 Local AI Module の必要性
 
 ## C. 原則避ける候補
 
@@ -879,56 +874,71 @@ Glassbox側には、
 - Buy / Sell ラベル
 - AIに財務数値そのものを生成させる
 - AIに数式判定を丸投げする
-- **Glassbox側がAI API従量課金を恒常負担する設計**
-- **初版からOSS LLMを必須同梱する設計**
+- Glassbox側がAI API従量課金を恒常負担する設計
+- 初版からOSS LLMを必須同梱する設計
 - 四季報の情報量競争
 - 何でも表示する巨大ダッシュボード
 - 予測精度を商品価値の中心にする
-- 「押し目買いシグナル」
+- 高度テクニカルを初版中心にする
 - ポートフォリオ機能への拡張
+- Web検索結果を市場心理の正値として扱う
 
 ---
 
-# 22. 現時点で最も重要な未解決課題
+# 25. 現時点で最も重要な未解決課題
 
-1. **既存製品項目棚卸しとの照合** — 何を基礎項目として採るか
-2. **Issue #13 の手法棚卸し完了** — 各 Detector 候補の数式・失敗条件・適用条件
-3. **Priority Router** — 何を「いま見るべき3点」として前面に出すか
-4. **Normalization Layer** — 日本株データで何を正規化する必要があるか
-5. **データライセンス** — 商用表示可能なデータ供給設計
-6. **Sector Adapter** — 最初に何業種まで対応するか
-7. **AIなしの説明生成** — Detector結果をどこまで自然で分かりやすい文章へ変換できるか
-8. **外部AI引き継ぎ仕様** — どの情報をどの形式で渡すか
-9. **法務確認** — 査読・価格文脈・イベント表示の境界
-10. **4,980円の価格納得感** — レポート内容と実利用で検証
+1. **On-Demand Retrieval Spike** — 1銘柄について何をどこまで自動取得できるか
+2. **検索手段の利用条件** — 検索API / 検索サービス / 直接取得の合法・安定運用
+3. **Evidence Extraction** — Web上の基礎数値をどこまで再現可能に抽出できるか
+4. **Narrative Normalization** — 転載・重複・SEO偏重をどこまで抑えられるか
+5. **Fact–Narrative Gap** — どの組合せが本当に有用な査読になるか
+6. **Priority Router** — 何を「いま見るべき3点」として前面に出すか
+7. **Source Usage Metadata** — 利用条件をどう機械的に管理するか
+8. **Sector Adapter** — 最初に何業種まで対応するか
+9. **AIなしの説明生成** — Detector結果をどこまで自然な文章へ変換できるか
+10. **法務確認** — 査読・Web文脈・価格文脈・イベント表示の境界
+11. **4,980円の価格納得感** — レポート内容と実利用で検証
 
 ---
 
-# 23. 実装の推奨順序候補
+# 26. 実装の推奨順序候補
 
-### Phase 1：レポート項目 v0.1
+### Phase 0：On-Demand Retrieval Spike
 
-- 企業カルテ
-- Fundamental
-- Valuation
-- Price Context
-- Event Context
-- Counterevidence
-- Unknowns
-- Provenance
+最初に1銘柄で取得の現実性を確認する。
 
-### Phase 2：Normalization Layer
+- Identity Resolver
+- Search Plan
+- Source Router
+- HTML / 公開情報取得
+- URL / Source Type / Retrieved at 保存
+- ローカルキャッシュ
+- 利用条件確認
 
+ここが成立しない場合、後段の精密設計を先に作り込まない。
+
+### Phase 1：Evidence Extraction / Normalization
+
+- 企業カルテ基礎数値
 - 財務期間
 - 単位
-- 分割
-- 予想 / 実績
-- 一過性
-- 会計差異
+- 実績 / 予想
+- 複数ソース不一致
+- Provenance
 
-### Phase 3：最初の Detector 群
+### Phase 2：Narrative Retrieval / Normalization
 
-まず少数の高説明力 Detector から始める。
+- タイトル / スニペット
+- Source Type
+- 日付
+- 重複排除
+- 同一原稿クラスタリング
+- Topic辞書
+- 時間減衰
+
+### Phase 3：最初のDetector群
+
+まず少数の高説明力Detectorから始める。
 
 候補:
 
@@ -936,75 +946,60 @@ Glassbox側には、
 - earnings vs cash flow
 - debt / interest burden
 - shareholder return sustainability
-- historical valuation position
-- peer valuation position
-- drawdown / relative performance
+- basic valuation position
 - next event proximity
+- narrative topic surge
+- source convergence
 
-### Phase 4：Priority Router
+### Phase 4：Fact–Narrative Gap
+
+- 増益物語 vs 本業利益
+- 割安物語 vs 利益悪化
+- 成長期待 vs 一次証拠
+- 悪材料集中 vs 実績変化
+
+### Phase 5：Priority Router
 
 多数の検出結果から「いま見るべき3点」を選ぶ。
 
-### Phase 5：決定論的レポート生成 + 詳細UI
+### Phase 6：決定論的レポート生成 + 詳細UI
 
-最上段 → 根拠 → 元データへ掘れる構造。
+30秒ビュー → 根拠 → 元ソースへ掘れる構造。
 
-自然言語説明もまずテンプレート・ルールベースで成立させる。
+### Phase 7：AI引き継ぎプロンプト
 
-### Phase 6：AI引き継ぎプロンプト
-
-Engine結果を構造化し、ユーザー自身の外部AIへ安全に渡せる形を作る。
+Engine結果を構造化し、ユーザー自身の外部AIへ渡せる形を作る。
 
 **Glassbox側からAI APIを呼ばない。**
 
-### Phase 7：Sector Adapter
+### Phase 8：Sector Adapter
 
 高頻度・高需要業種から追加。
 
-### Phase 8：Engine 2026 固定
+### Phase 9：Engine 2026 固定
 
 - ruleset
 - data schema
+- retrieval schema
 - detector versions
 - normalization version
 
 を固定し、再現可能な初版とする。
 
-### Future / Separate：Local AI Module 検討
-
-初版運用で明確な不足が確認された場合のみ、OSSローカルAIを任意追加モジュールとして検討する。
-
-これは Engine 2026 の成立条件ではなく、別Issueで費用対効果・端末要件・ライセンス・サポート負荷を評価する。
-
 ---
 
-# 24. まとめ
+# 27. まとめ
 
 現時点で最も筋が通っている Glassbox の姿は、単なる財務情報サイトでも、AIによる銘柄診断でも、予想ソフトでもない。
 
-内部では多数の成熟した分析手法を動かすが、それらを一つの「何点」という数字へ潰さない。
+> **ユーザーが今見たい1銘柄について、公開されている証拠と、その周囲で現在語られている物語をオンデマンドで独立収集し、その一致・不一致・見落としを再現可能なDetector群で査読し、重要論点へ圧縮して提示するローカル志向のソフトウェア。**
 
-各分析手法を Detector として使い、
+内部では、
 
-- 何を検出したか
-- どの条件で使えるか
-- どんなとき間違えるか
-- 何を根拠にしたか
+> **Search Plan / Source Router → Evidence + Narrative → Dual Normalization → Detector群 → Fact–Narrative Gap → Priority Router → Report**
 
-を管理する。
+を中核候補とする。
 
-その上で、ユーザーには大量の内部計算をそのまま見せず、
+大規模な金融DBやAI推論基盤をGlassbox社側に持つことを初版成立の前提にはしない。
 
-> **この銘柄を見るなら、いま重要なのはこの3点です。**
-
-という形へ圧縮する。
-
-必要ならそこから、数値、計算式、期間、原資料、Detectorへ降りられる。
-
-さらに深掘りしたい場合は、Glassbox内でAIを実行するのではなく、**査読済みの構造化プロンプトをユーザー自身の外部AIへ引き継ぐ。**
-
-現時点の設計候補を一文に圧縮すると、
-
-> **Glassbox は銘柄を採点するソフトではなく、再現可能な検出器群で銘柄を多面的に査読し、ユーザーがまだ見ていない可能性の高い観点を、根拠まで辿れる形で圧縮提示するソフトウェアである。製品価値はAIランタイムなしで成立させ、AIは開発工程と外部深掘りへの橋として使う。**
-
-この文自体も正本ではなく、今後の実装・市場検証・法務確認のための設計仮説として扱う。
+ただし、Web検索・公開情報利用は無制約ではないため、**取得技術と同時に利用条件を実装要件として扱う。**
