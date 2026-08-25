@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Glassbox Preview 0.1 — 7203 トヨタ自動車</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --ink-soft: #4c586f;
+      --muted: #718096;
+      --line: #dce2ea;
+      --line-strong: #c6ced9;
+      --paper: #ffffff;
+      --canvas: #f3f5f8;
+      --navy: #17243d;
+      --blue: #315b88;
+      --blue-soft: #eef4fa;
+      --amber: #a06514;
+      --amber-soft: #fff8e8;
+      --shadow: 0 14px 40px rgba(23, 32, 51, .08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    a { color: var(--blue); text-underline-offset: 3px; }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 0 28px 72px; }
+    .topbar {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      color: #fff;
+    }
+    .topbar-wrap { background: var(--navy); }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: .02em; }
+    .brand-mark { width: 30px; height: 30px; border: 1px solid rgba(255,255,255,.55); border-radius: 8px; display: grid; place-items: center; font-size: 13px; }
+    .version { color: #c9d3e2; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .hero { padding: 42px 0 26px; }
+    .eyebrow { margin: 0 0 8px; color: var(--blue); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 48px); line-height: 1.18; letter-spacing: -.035em; }
+    .company-sub { margin: 7px 0 0; color: var(--ink-soft); font-size: 16px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; color: var(--ink-soft); font-size: 13px; }
+    .meta strong { color: var(--ink); font-weight: 650; }
+    .boundary { margin: 18px 0 0; color: var(--muted); font-size: 12px; }
+    .summary-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, .8fr); gap: 18px; align-items: start; }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+    .panel-pad { padding: 26px; }
+    .section-kicker { margin: 0 0 14px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    h2 { margin: 0 0 18px; font-size: 22px; letter-spacing: -.02em; }
+    h3 { margin: 0 0 8px; font-size: 16px; line-height: 1.45; }
+    p { margin: 0; }
+    .issues { display: grid; gap: 12px; }
+    .issue { display: grid; grid-template-columns: 34px 1fr; gap: 13px; padding: 15px 0; border-top: 1px solid var(--line); }
+    .issue:first-child { border-top: 0; padding-top: 0; }
+    .issue-index { width: 30px; height: 30px; border-radius: 9px; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+    .issue p { color: var(--ink-soft); font-size: 13px; }
+    .coverage { display: grid; gap: 14px; }
+    .scope-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .scope-value { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 700; color: var(--blue); }
+    .coverage-row { padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fafbfd; }
+    .coverage-row.warn { border-color: #ead5aa; background: var(--amber-soft); }
+    .coverage-label { display: flex; justify-content: space-between; gap: 8px; font-weight: 650; }
+    .coverage-note { margin-top: 5px; color: var(--ink-soft); font-size: 12px; }
+    .status { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; font-weight: 700; }
+    .status.warn { color: var(--amber); }
+    .gap-callout { margin-top: 18px; padding: 20px 22px; border-left: 4px solid var(--blue); background: var(--blue-soft); border-radius: 4px 13px 13px 4px; }
+    .gap-callout .label { color: var(--blue); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .gap-callout p { margin-top: 7px; font-size: 17px; font-weight: 650; line-height: 1.55; }
+    .warning { margin-top: 18px; padding: 15px 18px; border: 1px solid #ead5aa; background: var(--amber-soft); border-radius: 12px; color: #6e4d17; }
+    .warning strong { color: #56390c; }
+    .detail-heading { margin: 44px 0 16px; display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+    .detail-heading p { color: var(--muted); font-size: 13px; }
+    .detail-stack { display: grid; gap: 14px; }
+    details { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 22px; font-weight: 700; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--blue); font-size: 22px; font-weight: 400; }
+    details[open] summary::after { content: "−"; }
+    details[open] summary { border-bottom: 1px solid var(--line); }
+    .detail-body { padding: 22px; }
+    .fundamentals { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+    .metric { min-height: 118px; padding: 15px; background: #f8fafc; border: 1px solid var(--line); border-radius: 11px; }
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { margin-top: 9px; font-size: 21px; font-weight: 720; letter-spacing: -.02em; }
+    .metric-period { margin-top: 5px; color: var(--ink-soft); font-size: 11px; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { color: var(--muted); font-size: 11px; text-align: left; letter-spacing: .05em; text-transform: uppercase; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .signal { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; font-weight: 700; color: var(--blue); }
+    .topic-list { display: flex; flex-wrap: wrap; gap: 9px; }
+    .topic { padding: 8px 11px; background: var(--blue-soft); border: 1px solid #d8e4f0; border-radius: 9px; }
+    .topic strong { display: block; font-size: 13px; }
+    .topic span { color: var(--ink-soft); font-size: 11px; }
+    .empty { padding: 16px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--ink-soft); }
+    .gap-list, .unknown-list, .source-list { display: grid; gap: 10px; }
+    .record { padding: 15px 16px; border: 1px solid var(--line); border-radius: 11px; }
+    .record-meta { margin-top: 6px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; overflow-wrap: anywhere; }
+    .source { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: start; }
+    .source a { overflow-wrap: anywhere; font-weight: 650; }
+    .source-meta { color: var(--ink-soft); font-size: 12px; }
+    .policy { white-space: nowrap; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; }
+    footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line-strong); color: var(--muted); font-size: 12px; }
+    @media (max-width: 900px) {
+      .summary-grid { grid-template-columns: 1fr; }
+      .fundamentals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 600px) {
+      .shell { padding-left: 17px; padding-right: 17px; }
+      .version { display: none; }
+      .hero { padding-top: 30px; }
+      .panel-pad { padding: 20px; }
+      .fundamentals { grid-template-columns: 1fr; }
+      .detail-heading { align-items: start; flex-direction: column; }
+      .source { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; }
+      .topbar-wrap { background: #fff; border-bottom: 1px solid var(--line); }
+      .topbar, .brand { color: var(--ink); }
+      .version { color: var(--muted); }
+      .panel { box-shadow: none; }
+      details { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar-wrap">
+    <div class="shell topbar">
+      <div class="brand"><span class="brand-mark">GB</span><span>Glassbox Investing</span></div>
+      <div class="version">Preview 0.1 · deterministic review</div>
+    </div>
+  </div>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">Stock review · 30-second view</p>
+      <h1>7203 トヨタ自動車</h1>
+      <p class="company-sub">Toyota Motor Corporation</p>
+      <div class="meta">
+        <span>Data as of <strong>2026/08/25 20:22 JST</strong></span>
+        <span>Engine <strong>spike-2026.3</strong></span>
+        <span>Rule Set <strong>issue-14-v3</strong></span>
+      </div>
+      <p class="boundary">確認可能な事実・企業側の語り・独立した外部の語りを分けて確認するための調査支援です。投資助言や売買判断を提供するものではありません。</p>
+    </header>
+
+    <section class="summary-grid" aria-label="30秒ビュー">
+      <div class="panel panel-pad">
+        <p class="section-kicker">Priority router</p>
+        <h2>いま見るべき3点</h2>
+        <div class="issues"><article class="issue"><div class="issue-index">1</div><div><h3>企業側が強調する成長・投資の物語と、増収でも営業減益となった本業採算を分けて見る必要がある。</h3><p>Fact–Narrative Gap detected by a versioned rule.</p></div></article><article class="issue"><div class="issue-index">2</div><div><h3>independent_public_narrative: insufficient</h3><p>Independent coverage is 0 domain(s) / 0 cluster(s); no Independent Public Narrative or related gap was generated.</p></div></article><article class="issue"><div class="issue-index">3</div><div><h3>Quarterly revenue changed +10.4% while operating income changed -8.8%.</h3><p>revenue_operating_profit_divergence was detected from traceable evidence.</p></div></article></div>
+        <div class="gap-callout">
+          <div class="label">Primary Fact–Narrative Gap</div>
+          <p>企業側が強調する成長・投資の物語と、増収でも営業減益となった本業採算を分けて見る必要がある。</p>
+        </div>
+        <div class="warning"><strong>未確認・不足が 7 項目あります。</strong> 重要な空白を結論で埋めず、詳細で取得理由を確認してください。</div>
+      </div>
+
+      <aside class="panel panel-pad" aria-label="Narrative Coverage">
+        <p class="section-kicker">Narrative coverage</p>
+        <h2>語りの観測範囲</h2>
+        <div class="coverage">
+          <div class="scope-line"><span>narrative_scope</span><span class="scope-value">issuer</span></div>
+          <div class="coverage-row">
+            <div class="coverage-label"><span>企業側の語り</span><span class="status">available</span></div>
+            <div class="coverage-note">2 domains · 20 clusters</div>
+          </div>
+          <div class="coverage-row warn">
+            <div class="coverage-label"><span>独立した外部の語り</span><span class="status warn">insufficient</span></div>
+            <div class="coverage-note">0 domains · 0 clusters</div>
+          </div>
+          <p class="coverage-note">独立ソースのCoverageを満たしていないため、企業公式情報を外部Narrativeとして代用していません。</p>
+        </div>
+      </aside>
+    </section>
+
+    <div class="detail-heading">
+      <div><p class="section-kicker">Trace the review</p><h2>根拠と詳細</h2></div>
+      <p>各セクションを開くと、判定からEvidenceとSourceへ降りられます。</p>
+    </div>
+
+    <section class="detail-stack" aria-label="査読詳細">
+      <details open>
+        <summary>Fundamental · 主要数値</summary>
+        <div class="detail-body">
+          <div class="fundamentals"><div class="metric"><div class="metric-label">売上収益</div><div class="metric-value">¥13.53兆</div><div class="metric-period">FY2027 Q1</div></div><div class="metric"><div class="metric-label">営業利益</div><div class="metric-value">¥1.06兆</div><div class="metric-period">FY2027 Q1</div></div><div class="metric"><div class="metric-label">純利益</div><div class="metric-value">¥1.48兆</div><div class="metric-period">FY2027 Q1</div></div><div class="metric"><div class="metric-label">基本EPS</div><div class="metric-value">¥120.69</div><div class="metric-period">FY2027 Q1</div></div><div class="metric"><div class="metric-label">営業キャッシュフロー</div><div class="metric-value">¥0.54兆</div><div class="metric-period">FY2027 Q1</div></div></div>
+          <div class="table-wrap" style="margin-top:18px"><table><thead><tr><th>Evidence</th><th>Period</th><th>Value</th><th>Kind</th><th>Source</th></tr></thead><tbody><tr><td>基本EPS</td><td>FY2027 Q1</td><td>¥120.69</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>基本EPS</td><td>FY2027 forecast</td><td>¥272.17</td><td>company_forecast</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>基本EPS</td><td>FY2026 Q1</td><td>¥64.56</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>純利益</td><td>FY2027 Q1</td><td>¥1.48兆</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>純利益</td><td>FY2027 forecast</td><td>¥3.25兆</td><td>company_forecast</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>純利益</td><td>FY2026 Q1</td><td>¥0.84兆</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>純利益</td><td>2024-04-01/2025-03-31</td><td>¥4.77兆</td><td>actual</td><td><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a></td></tr><tr><td>純利益</td><td>2023-04-01/2024-03-31</td><td>¥4.94兆</td><td>actual</td><td><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a></td></tr><tr><td>next or latest earnings date</td><td>FY2027 Q1</td><td>2026-04-01 ISO-8601 date</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>営業キャッシュフロー</td><td>FY2027 Q1</td><td>¥0.54兆</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>営業キャッシュフロー</td><td>FY2026 Q1</td><td>¥1.88兆</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>営業キャッシュフロー</td><td>2024-04-01/2025-03-31</td><td>¥3.7兆</td><td>actual</td><td><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a></td></tr><tr><td>営業キャッシュフロー</td><td>2023-04-01/2024-03-31</td><td>¥4.21兆</td><td>actual</td><td><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a></td></tr><tr><td>営業利益</td><td>FY2027 Q1</td><td>¥1.06兆</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>営業利益</td><td>FY2027 forecast</td><td>¥3.4兆</td><td>company_forecast</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>営業利益</td><td>FY2026 Q1</td><td>¥1.17兆</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>営業利益</td><td>2024-04-01/2025-03-31</td><td>¥4.8兆</td><td>actual</td><td><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a></td></tr><tr><td>営業利益</td><td>2023-04-01/2024-03-31</td><td>¥5.35兆</td><td>actual</td><td><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a></td></tr><tr><td>売上収益</td><td>FY2027 Q1</td><td>¥13.53兆</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>売上収益</td><td>FY2027 forecast</td><td>¥54兆</td><td>company_forecast</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>売上収益</td><td>FY2026 Q1</td><td>¥12.25兆</td><td>actual</td><td><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a></td></tr><tr><td>売上収益</td><td>2024-04-01/2025-03-31</td><td>¥48.04兆</td><td>actual</td><td><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a></td></tr><tr><td>売上収益</td><td>2023-04-01/2024-03-31</td><td>¥45.1兆</td><td>actual</td><td><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a></td></tr></tbody></table></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Evidence Detector · 検出結果</summary>
+        <div class="detail-body"><div class="table-wrap"><table><thead><tr><th>Signal</th><th>Detector / Result</th><th>Period</th><th>Evidence refs</th></tr></thead><tbody><tr><td><span class="signal">detected</span></td><td><strong>revenue_operating_profit_divergence</strong><br>Quarterly revenue changed +10.4% while operating income changed -8.8%.</td><td>latest available Q1 year-on-year</td><td class="record-meta">ev_fcedd468077a, ev_731bef5741db, ev_7ef0bfacfb0b, ev_1b750b39edfc</td></tr><tr><td><span class="signal">detected</span></td><td><strong>operating_margin_change</strong><br>Operating margin moved from +9.5% to +7.9% (-1.65 points).</td><td>latest available Q1 year-on-year</td><td class="record-meta">ev_fcedd468077a, ev_731bef5741db, ev_7ef0bfacfb0b, ev_1b750b39edfc</td></tr><tr><td><span class="signal">detected</span></td><td><strong>operating_cash_flow_pressure</strong><br>Quarterly operating cash flow changed -71.4%; cash flow / operating income was 0.50x.</td><td>latest available Q1 year-on-year</td><td class="record-meta">ev_cc2b2f265b2b, ev_668eb1b658b0, ev_7ef0bfacfb0b</td></tr></tbody></table></div></div>
+      </details>
+
+      <details>
+        <summary>Narrative · 企業側 / 独立外部</summary>
+        <div class="detail-body">
+          <h3>企業側の語り</h3>
+          <div class="topic-list"><div class="topic"><strong>株主還元</strong><span>score 4 · 4 clusters · 2 domains</span></div><div class="topic"><strong>業績</strong><span>score 2.8 · 4 clusters · 2 domains</span></div><div class="topic"><strong>EV / 電動化</strong><span>score 1 · 1 clusters · 1 domains</span></div><div class="topic"><strong>成長・投資</strong><span>score 1 · 1 clusters · 1 domains</span></div></div>
+          <h3 style="margin-top:24px">独立した外部の語り</h3>
+          <div class="empty">insufficient — 独立した外部ソースのCoverageが不足しています。Public Narrativeは生成していません。</div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Fact–Narrative Gap · 照合結果</summary>
+        <div class="detail-body">
+          <div class="gap-list"><article class="record"><span class="signal">evidence_issuer_narrative</span><h3 style="margin-top:6px">企業側が強調する成長・投資の物語と、増収でも営業減益となった本業採算を分けて見る必要がある。</h3><p class="record-meta">Evidence: ev_fcedd468077a, ev_731bef5741db, ev_7ef0bfacfb0b, ev_1b750b39edfc · Issuer: cluster_e268a120bade · Independent: none</p></article><article class="record"><span class="signal">evidence_issuer_narrative</span><h3 style="margin-top:6px">企業側が強調する株主還元と、営業利益の減少および還元余力の持続性を分けて確認する必要がある。</h3><p class="record-meta">Evidence: ev_fcedd468077a, ev_731bef5741db, ev_7ef0bfacfb0b, ev_1b750b39edfc · Issuer: cluster_b0606fbf10d3, cluster_e268a120bade, cluster_e80fa50c991d, cluster_e08e1feab5f2 · Independent: none</p></article></div>
+          <div class="table-wrap" style="margin-top:18px"><table><thead><tr><th>Direction</th><th>Status</th><th>Reason</th></tr></thead><tbody><tr><td>evidence_issuer_narrative</td><td><span class="signal">evaluated</span></td><td>Issuer Narrative was available and evaluated against Evidence.</td></tr><tr><td>evidence_independent_public_narrative</td><td><span class="signal">insufficient</span></td><td>Independent Public Narrative did not meet the coverage gate; no gap was generated.</td></tr><tr><td>issuer_narrative_independent_public_narrative</td><td><span class="signal">insufficient</span></td><td>Independent Public Narrative did not meet the coverage gate; no cross-narrative gap was generated.</td></tr></tbody></table></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Unknowns · 未確認 / 不足</summary>
+        <div class="detail-body"><div class="unknown-list"><article class="record"><span class="signal">unknown</span><h3 style="margin-top:6px">PER</h3><p>Official JPX OHLC and delayed-price services require an application/contract; no credential or redistribution permission is configured.</p></article><article class="record"><span class="signal">unknown</span><h3 style="margin-top:6px">PBR</h3><p>Official JPX OHLC and delayed-price services require an application/contract; no credential or redistribution permission is configured.</p></article><article class="record"><span class="signal">unknown</span><h3 style="margin-top:6px">現在値 / 直近終値</h3><p>Official JPX OHLC and delayed-price services require an application/contract; no credential or redistribution permission is configured.</p></article><article class="record"><span class="signal">unknown</span><h3 style="margin-top:6px">前日比</h3><p>Official JPX OHLC and delayed-price services require an application/contract; no credential or redistribution permission is configured.</p></article><article class="record"><span class="signal">unknown</span><h3 style="margin-top:6px">52週高値</h3><p>Official JPX OHLC and delayed-price services require an application/contract; no credential or redistribution permission is configured.</p></article><article class="record"><span class="signal">unknown</span><h3 style="margin-top:6px">52週安値</h3><p>Official JPX OHLC and delayed-price services require an application/contract; no credential or redistribution permission is configured.</p></article><article class="record"><span class="signal">insufficient</span><h3 style="margin-top:6px">独立した外部の語り</h3><p>Independent coverage is 0 domain(s) / 0 cluster(s); no Independent Public Narrative or related gap was generated.</p></article></div></div>
+      </details>
+
+      <details id="sources">
+        <summary>Sources / Provenance · 出典</summary>
+        <div class="detail-body">
+          <div class="source-list"><article class="record source"><div><a href="https://global.toyota/en/ir/financial-results/" target="_blank" rel="noreferrer">global.toyota</a><div class="source-meta">company_official · role evidence_origin · scope not_applicable</div><div class="record-meta">src_9a109af24c3f · retrieved 2026/08/25 20:22 JST</div></div><span class="policy">uncertain_for_product</span></article><article class="record source"><div><a href="https://global.toyota/pages/global_toyota/ir/financial-results/2027_1q_summary_en.pdf" target="_blank" rel="noreferrer">global.toyota</a><div class="source-meta">company_official · role evidence_origin · scope not_applicable</div><div class="record-meta">src_a1b2932a0231 · retrieved 2026/08/25 20:22 JST</div></div><span class="policy">uncertain_for_product</span></article><article class="record source"><div><a href="https://global.toyota/en/ir/" target="_blank" rel="noreferrer">global.toyota</a><div class="source-meta">company_official · role narrative_origin · scope issuer</div><div class="record-meta">src_986182ea5b22 · retrieved 2026/08/25 20:22 JST</div></div><span class="policy">uncertain_for_product</span></article><article class="record source"><div><a href="https://data.sec.gov/api/xbrl/companyfacts/CIK0001094517.json" target="_blank" rel="noreferrer">data.sec.gov</a><div class="source-meta">public_filing_api · role evidence_origin · scope not_applicable</div><div class="record-meta">src_f7c37b38c705 · retrieved 2026/08/25 20:22 JST</div></div><span class="policy">public_api_with_conditions</span></article></div>
+          <h3 style="margin-top:24px">取得できなかった経路</h3><div class="unknown-list"><article class="record"><span class="signal">failed</span><h3 style="margin-top:6px">open_news_metadata</h3><p>UND_ERR_CONNECT_TIMEOUT</p></article><article class="record"><span class="signal">blocked</span><h3 style="margin-top:6px">licensed_market_data_if_configured</h3><p>Official JPX OHLC and delayed-price services require an application/contract; no credential or redistribution permission is configured.</p></article><article class="record"><span class="signal">blocked</span><h3 style="margin-top:6px">google_news_rss</h3><p>The feed copyright notice limits the feed to rendering in personal feed readers; it is not used as a product data source.</p></article></div>
+        </div>
+      </details>
+    </section>
+  </main>
+  <footer class="shell">Generated deterministically from <code>review.json</code>. Glassbox Preview 0.1 does not fetch, infer, or rewrite review evidence.</footer>
+</body>
+</html>

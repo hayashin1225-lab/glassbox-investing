@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "spike:7203": "node spike/on-demand-reconstruction/src/cli.js 7203"
+    "spike:7203": "node spike/on-demand-reconstruction/src/cli.js 7203",
+    "preview:7203": "npm run spike:7203 && node spike/on-demand-reconstruction/src/preview-cli.js spike/on-demand-reconstruction/runs/7203/review.json spike/on-demand-reconstruction/runs/7203/report.html"
   },
   "dependencies": {
     "pdf-parse": "2.4.5"
