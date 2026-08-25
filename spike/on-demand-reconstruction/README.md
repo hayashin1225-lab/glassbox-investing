@@ -16,7 +16,7 @@ symbol
   -> three evidence detectors
   -> three-direction Fact–Narrative Gap assessment
   -> deterministic priority router
-  -> JSON state + 30-second Markdown report
+  -> JSON state + 30-second Markdown report + local HTML preview
 ```
 
 The ticker boundary is `catalog/companies.json`; adding another company does not require changing the engine. The current source-specific PDF extractor is deliberately named and fail-closed. It throws instead of guessing when the Toyota table layout is not recognized.
@@ -29,13 +29,17 @@ Requirements: Node.js 20.16+ or 22.3+.
 npm install
 npm test
 npm run spike:7203
+npm run preview:7203
 ```
+
+`npm run preview:7203` reruns the existing 7203 spike and then renders `report.html` from the resulting `review.json`. The Preview renderer does not retrieve data, run detectors, or rewrite the review state; it only turns the saved state into a self-contained HTML file.
 
 The live run writes ignored working artifacts under `runs/7203/`:
 
 - `retrieved-input.json`: saved retrieval result, before detector execution
 - `review.json`: normalized evidence, narratives, detectors, gaps, unknowns, and logs
 - `report.md`: 30-second view
+- `report.html`: Glassbox Preview 0.1, with a compact first view and expandable evidence/provenance details
 
 Replay without network access:
 
@@ -43,7 +47,27 @@ Replay without network access:
 node spike/on-demand-reconstruction/src/cli.js `
   --replay spike/on-demand-reconstruction/runs/7203/retrieved-input.json `
   --out spike/on-demand-reconstruction/runs/7203-replay
+
+node spike/on-demand-reconstruction/src/preview-cli.js `
+  spike/on-demand-reconstruction/runs/7203-replay/review.json `
+  spike/on-demand-reconstruction/runs/7203-replay/report.html
 ```
+
+The committed [7203 sample](samples/7203/report.html) contains only the structured review rendered as HTML. It does not embed retrieved PDFs, HTML pages, article bodies, or the raw retrieval input. Save or clone the file and open it directly in a browser; it has no external runtime dependency.
+
+## Glassbox Preview 0.1
+
+The preview intentionally leaves the Issue #14 Engine unchanged. It provides a deterministic presentation boundary over `review.json`:
+
+- the first view shows the company, three routed issues, primary Fact–Narrative Gap, Narrative Coverage, and an Unknown warning;
+- expandable details separate Fundamentals, Evidence Detectors, Issuer / Independent Public Narrative, Gaps, Unknowns, and Sources;
+- `narrative_scope: issuer` and Independent Public Narrative `insufficient` remain separate and visible;
+- source URLs link back to provenance records;
+- no score, recommendation, Buy / Sell label, external AI call, database, web font, or client-side JavaScript is added.
+
+For the 2026-08-25 live 7203 run, three renders from the same `review.json` produced the same SHA-256:
+
+`0C90314BA6428DE353008D25543A646F7D2E4D0C3FD0B068739A2ACCD2855234`
 
 ## 7203 live proof (2026-08-24)
 
