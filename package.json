@@ -1,0 +1,15 @@
+{
+  "name": "glassbox-investing",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "spike:7203": "node spike/on-demand-reconstruction/src/cli.js 7203"
+  },
+  "dependencies": {
+    "pdf-parse": "2.4.5"
+  },
+  "engines": {
+    "node": ">=20.16 <21 || >=22.3"
+  }
+}
